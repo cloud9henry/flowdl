@@ -39,7 +39,32 @@ class WatcherTests(unittest.TestCase):
             self.assertEqual(result["new"], 1)
             self.assertEqual(result["processed"], 1)
             self.assertEqual(result["failed"], 0)
-            run_mock.assert_called_once_with("https://example.com/b", {"mode": "video"})
+            run_mock.assert_called_once_with(
+                "https://example.com/b",
+                {"mode": "video"},
+                audio_sidecar=False,
+            )
+
+    def test_watch_once_passes_audio_sidecar_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            state_path = Path(tmpdir) / "watch_state.json"
+
+            with patch(
+                "flowdl.core.watcher.get_playlist_urls",
+                return_value=["https://example.com/a"],
+            ), patch("flowdl.core.watcher.run_pipeline", return_value="/tmp/final.mp4") as run_mock:
+                watch_once(
+                    "https://example.com/source",
+                    {"mode": "video"},
+                    state_path=state_path,
+                    audio_sidecar=True,
+                )
+
+            run_mock.assert_called_once_with(
+                "https://example.com/a",
+                {"mode": "video"},
+                audio_sidecar=True,
+            )
 
     def test_watch_once_tracks_failures_without_marking_seen(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -71,4 +96,3 @@ class WatcherTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

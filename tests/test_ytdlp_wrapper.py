@@ -40,6 +40,7 @@ class YtDlpWrapperTests(unittest.TestCase):
         opts = ydl_ctor.call_args.args[0]
         self.assertEqual(opts["format"], "bestaudio/best")
         self.assertEqual(opts["outtmpl"], str(Path(tmpdir) / "%(title)s.%(ext)s"))
+        self.assertNotIn("merge_output_format", opts)
         ydl_instance.extract_info.assert_called_once_with("https://example.com", download=True)
 
     def test_download_with_ytdlp_success_video_mode(self) -> None:
@@ -56,6 +57,9 @@ class YtDlpWrapperTests(unittest.TestCase):
         self.assertEqual(output, "/tmp/out.mp4")
         opts = ydl_ctor.call_args.args[0]
         self.assertEqual(opts["format"], "bestvideo+bestaudio/best")
+        self.assertEqual(opts["merge_output_format"], "mp4")
+        self.assertEqual(opts["postprocessors"][0]["key"], "FFmpegVideoRemuxer")
+        self.assertEqual(opts["postprocessors"][0]["preferedformat"], "mp4")
 
     def test_download_with_ytdlp_wraps_download_error(self) -> None:
         ydl_instance = MagicMock()

@@ -1,105 +1,96 @@
 # FlowDL
 
-FlowDL is a preset-driven CLI that wraps `yt-dlp` and `ffmpeg` into a clean local pipeline:
+FlowDL is a preset-driven CLI media pipeline built on top of `yt-dlp` and `ffmpeg`.
 
 download -> post-process -> organise
 
-No raw downloader flags. No giant command strings. Just presets.
+It is designed to keep commands simple and repeatable by using presets instead of raw downloader flags.
 
-## Why FlowDL
+## Highlights
 
-- Preset-first UX for repeatable output
-- Single command for download + conversion + folder routing
-- Playlist-aware downloads with per-item processing
-- Minimal dependency surface and macOS-friendly workflow
-- Modular Python architecture that is easy to extend
-
-## Use Cases
-
-- Build a podcast library from long-form YouTube content
-- Build a cleaner music library from videos/live sets/remixes
-- Batch process research or study URLs into consistent outputs
-- Trim downloaded media into reusable clips
+- Preset-first UX for consistent output
+- MP4-first video downloads for better compatibility
+- Playlist-aware downloads (`--playlist`)
+- Lecture workflow support with optional audio sidecar export
+- Clip extraction from timestamp files
+- Watch mode for automatic polling (`--once` or `--interval`)
 
 ## Requirements
 
 - Python 3.10+
 - `ffmpeg` installed and available on `PATH`
-- `yt-dlp` is installed automatically via `pip install -e .`
+- `yt-dlp` (installed automatically by `pip install -e .`)
 
 ## Installation
-
-### 1) Clone
 
 ```bash
 git clone https://github.com/cloud9henry/flowdl.git
 cd flowdl
-```
-
-### 2) Install ffmpeg (macOS)
-
-```bash
-brew install ffmpeg
-```
-
-### 3) Create virtualenv and install FlowDL
-
-```bash
+brew install ffmpeg            # macOS
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
 
-## Quick Start
+## Best Example: Lecture Workflow
+
+Download lecture video, compress it for portability, and also export audio:
 
 ```bash
-flowdl download "https://www.youtube.com/watch?v=jNQXAC9IVRw" --preset music
-flowdl download "https://www.youtube.com/playlist?list=..." --preset podcast --playlist
-flowdl batch urls.txt --preset podcast
-flowdl trim input.mp4 --start 00:10 --end 01:00
-flowdl watch "https://www.youtube.com/playlist?list=..." --preset podcast --once
-flowdl watch "https://www.youtube.com/@channel/videos" --preset podcast --interval 30
+flowdl download "https://www.youtube.com/watch?v=..." --preset lecture --audio-sidecar
 ```
 
-## When To Use `watch`
+Default lecture outputs:
+- video: `Downloads/Lectures`
+- audio sidecar: `Downloads/Lectures/Audio`
 
-Use `watch` for ongoing intake from a playlist/channel URL.
+Then generate clips from notes:
 
-- Use `--once` when running on a schedule (recommended for most users).
-- Use `--interval <minutes>` when you want a continuous foreground watcher.
-- Watch state is persisted in `~/.flowdl/watch_state.json`, so already-seen items are skipped on later runs.
+```bash
+flowdl clip lecture.mp4 --timestamps notes.txt
+```
+
+Example `notes.txt`:
+
+```text
+00:10-01:00 Intro
+01:10:00-01:12:30 Key concept
+```
 
 ## Commands
 
-- `flowdl download <url> [--preset <name>] [--playlist]`
-- `flowdl batch <file.txt> [--preset <name>]`
+- `flowdl download <url> [--preset <name>] [--playlist] [--audio-sidecar]`
+- `flowdl batch <file.txt> [--preset <name>] [--audio-sidecar]`
 - `flowdl trim <file> --start <time> --end <time>`
-- `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>]`
+- `flowdl clip <file> --timestamps <notes.txt>`
+- `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>] [--audio-sidecar]`
 
 ## Presets
 
-Default presets are in `flowdl/config/presets.json`:
+Built-in presets in `flowdl/config/presets.json`:
 
-- `music`: audio -> MP3, high quality, output to `Downloads/Music`
-- `video`: video mode, output to `Downloads/Videos`
+- `music`: audio -> MP3, output to `Downloads/Music`
+- `video`: MP4-first video, output to `Downloads/Videos`
 - `podcast`: audio -> MP3 + compression, output to `Downloads/Podcasts`
-- `mobile`: video preset optimized for smaller files (720p + compression), output to `Downloads/Mobile`
+- `mobile`: compressed 720p MP4-first video, output to `Downloads/Mobile`
+- `lecture`: compressed 720p video, output to `Downloads/Lectures`
 
-User-level presets are supported at `~/.config/flowdl/presets.json`.
-When present, user presets are merged with defaults, and user keys override built-in preset names.
+## User Presets
 
-Example:
+User-level presets are supported at:
 
-```json
-{
-  "lecture": {
-    "mode": "video",
-    "resolution": "720",
-    "compress": true,
-    "output_dir": "Downloads/Lectures"
-  }
-}
-```
+`~/.config/flowdl/presets.json`
+
+FlowDL loads defaults first, then merges user presets on top (user keys override defaults).
+
+## Watch Modes
+
+Use `watch` for channel/playlist intake:
+
+- `--once`: run one cycle and exit (best for cron/launchd automation)
+- `--interval N`: run continuously and poll every `N` minutes
+
+Watch state is stored at `~/.flowdl/watch_state.json`, so previously seen items are skipped.
 
 ## Development
 
@@ -109,28 +100,17 @@ Run tests:
 python3 -m unittest discover -s tests -v
 ```
 
-Project layout:
-
-```text
-flowdl/
-  cli/            # command parsing and handlers
-  core/           # pipeline orchestration
-  integrations/   # yt-dlp and ffmpeg wrappers
-  config/         # default presets
-  utils/          # shared helpers and errors
-tests/
-```
-
 ## Roadmap
 
-- User-level presets/config path (`~/.config/flowdl/presets.json`)
-- Rich naming templates and metadata embedding
-- More output presets (lecture, creator)
-- Watch mode improvements (per-source intervals, retries, lockfile/single-instance safety)
+- Naming templates (for example `Uploader - Title`)
+- Metadata embedding and loudness normalization presets
+- Download archive and retry/backoff policies
+- Watch mode hardening (lockfile/single-instance guarantees)
+- Packaged distribution (`pipx`, Homebrew tap)
 
 ## Contributing
 
-Contributions are welcome. Please read `CONTRIBUTING.md` and open an issue for major changes.
+Contributions are welcome. See `CONTRIBUTING.md`.
 
 ## License
 

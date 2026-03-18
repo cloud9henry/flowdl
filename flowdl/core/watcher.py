@@ -27,7 +27,12 @@ def save_watch_state(state: dict, state_path: str | Path | None = None) -> None:
     path.write_text(json.dumps(state, indent=2), encoding="utf-8")
 
 
-def watch_once(source_url: str, preset: dict, state_path: str | Path | None = None) -> dict:
+def watch_once(
+    source_url: str,
+    preset: dict,
+    state_path: str | Path | None = None,
+    audio_sidecar: bool = False,
+) -> dict:
     state = load_watch_state(state_path)
     sources = state.setdefault("sources", {})
     source_state = sources.setdefault(source_url, {"seen_urls": []})
@@ -40,7 +45,7 @@ def watch_once(source_url: str, preset: dict, state_path: str | Path | None = No
     failed = 0
     for url in new_urls:
         try:
-            run_pipeline(url, preset)
+            run_pipeline(url, preset, audio_sidecar=audio_sidecar)
             seen_urls.add(url)
             processed += 1
         except Exception:
@@ -57,11 +62,16 @@ def watch_once(source_url: str, preset: dict, state_path: str | Path | None = No
     }
 
 
-def watch_interval(source_url: str, preset: dict, interval_minutes: int, state_path: str | Path | None = None) -> None:
+def watch_interval(
+    source_url: str,
+    preset: dict,
+    interval_minutes: int,
+    state_path: str | Path | None = None,
+    audio_sidecar: bool = False,
+) -> None:
     if interval_minutes <= 0:
         raise ValueError("interval_minutes must be greater than 0")
 
     while True:
-        watch_once(source_url, preset, state_path=state_path)
+        watch_once(source_url, preset, state_path=state_path, audio_sidecar=audio_sidecar)
         time.sleep(interval_minutes * 60)
-

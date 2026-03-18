@@ -19,6 +19,7 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertIn("video", presets)
         self.assertIn("podcast", presets)
         self.assertIn("mobile", presets)
+        self.assertIn("lecture", presets)
 
     def test_load_presets_merges_user_presets(self) -> None:
         with TemporaryDirectory() as tmpdir:

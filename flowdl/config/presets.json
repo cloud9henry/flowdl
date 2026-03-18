@@ -21,5 +21,13 @@
     "resolution": "720",
     "compress": true,
     "output_dir": "Downloads/Mobile"
+  },
+  "lecture": {
+    "mode": "video",
+    "resolution": "720",
+    "compress": true,
+    "audio_format": "mp3",
+    "audio_output_dir": "Downloads/Lectures/Audio",
+    "output_dir": "Downloads/Lectures"
   }
 }

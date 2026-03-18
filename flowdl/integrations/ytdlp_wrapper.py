@@ -35,6 +35,15 @@ def download_with_ytdlp(url: str, preset: dict, temp_dir: str = "temp") -> str:
         "quiet": True,
         "no_warnings": True,
     }
+    if preset.get("mode") == "video":
+        # Prefer broadly compatible MP4 outputs for video workflows.
+        ydl_opts["merge_output_format"] = "mp4"
+        ydl_opts["postprocessors"] = [
+            {
+                "key": "FFmpegVideoRemuxer",
+                "preferedformat": "mp4",
+            }
+        ]
 
     try:
         with YoutubeDL(ydl_opts) as ydl:

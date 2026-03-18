@@ -8,9 +8,11 @@ from unittest.mock import patch
 
 from flowdl.cli.main import (
     _handle_batch,
+    _handle_clip,
     _handle_download,
     _handle_watch,
     _handle_trim,
+    _parse_timestamps_file,
     _validate_time,
     build_parser,
     main,
@@ -33,6 +35,7 @@ class CLITests(unittest.TestCase):
         self.assertEqual(parsed.command, "download")
         self.assertEqual(parsed.preset, "video")
         self.assertFalse(parsed.playlist)
+        self.assertFalse(parsed.audio_sidecar)
 
     def test_build_parser_playlist_flag(self) -> None:
         parser = build_parser()
@@ -45,6 +48,13 @@ class CLITests(unittest.TestCase):
         self.assertEqual(parsed.command, "watch")
         self.assertTrue(parsed.once is False)
         self.assertIsNone(parsed.interval)
+        self.assertFalse(parsed.audio_sidecar)
+
+    def test_build_parser_clip_command(self) -> None:
+        parser = build_parser()
+        parsed = parser.parse_args(["clip", "input.mp4", "--timestamps", "notes.txt"])
+        self.assertEqual(parsed.command, "clip")
+        self.assertEqual(parsed.timestamps, "notes.txt")
 
     def test_handle_download_success(self) -> None:
         stdout = io.StringIO()
@@ -82,7 +92,7 @@ class CLITests(unittest.TestCase):
         stdout = io.StringIO()
         stderr = io.StringIO()
 
-        def side_effect(url: str, preset: dict) -> str:
+        def side_effect(url: str, preset: dict, audio_sidecar: bool = False) -> str:
             if url.endswith("/b"):
                 raise RuntimeError("bad")
             return "/tmp/out.mp3"
@@ -136,7 +146,7 @@ class CLITests(unittest.TestCase):
             batch_file = Path(tmpdir) / "urls.txt"
             batch_file.write_text("https://example.com/a\nhttps://example.com/b\n", encoding="utf-8")
 
-            def run_side_effect(url: str, preset: dict) -> str:
+            def run_side_effect(url: str, preset: dict, audio_sidecar: bool = False) -> str:
                 if url.endswith("b"):
                     raise FlowDLError("bad")
                 return "/tmp/out.mp4"
@@ -206,21 +216,93 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("Watch stopped.", stdout.getvalue())
 
+    def test_handle_download_passes_audio_sidecar_flag(self) -> None:
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "video"}), patch(
+            "flowdl.cli.main.run_pipeline", return_value="/tmp/out.mp4"
+        ) as pipeline_mock:
+            _handle_download("https://example.com", "video", audio_sidecar=True)
+
+        pipeline_mock.assert_called_once_with(
+            "https://example.com",
+            {"mode": "video"},
+            audio_sidecar=True,
+        )
+
+    def test_handle_batch_passes_audio_sidecar_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            batch_file = Path(tmpdir) / "urls.txt"
+            batch_file.write_text("https://example.com/a\n", encoding="utf-8")
+
+            with patch("flowdl.cli.main.get_preset", return_value={"mode": "video"}), patch(
+                "flowdl.cli.main.run_pipeline", return_value="/tmp/out.mp4"
+            ) as pipeline_mock:
+                _handle_batch(str(batch_file), "video", audio_sidecar=True)
+
+        pipeline_mock.assert_called_once_with(
+            "https://example.com/a",
+            {"mode": "video"},
+            audio_sidecar=True,
+        )
+
+    def test_handle_watch_passes_audio_sidecar_flag(self) -> None:
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "video"}), patch(
+            "flowdl.cli.main.watch_once",
+            return_value={"discovered": 1, "new": 1, "processed": 1, "failed": 0},
+        ) as watch_mock:
+            _handle_watch("https://example.com/channel", "video", once=True, interval=None, audio_sidecar=True)
+
+        watch_mock.assert_called_once_with(
+            "https://example.com/channel",
+            {"mode": "video"},
+            audio_sidecar=True,
+        )
+
+    def test_parse_timestamps_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            notes = Path(tmpdir) / "notes.txt"
+            notes.write_text(
+                "# comment\n00:10-01:00 intro section\n01:10:00-01:12:30 key-point\n",
+                encoding="utf-8",
+            )
+            result = _parse_timestamps_file(notes)
+
+        self.assertEqual(
+            result,
+            [("00:10", "01:00", "intro-section"), ("01:10:00", "01:12:30", "key-point")],
+        )
+
+    def test_handle_clip_creates_multiple_outputs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            source = Path(tmpdir) / "lecture.mp4"
+            source.write_text("data", encoding="utf-8")
+            notes = Path(tmpdir) / "notes.txt"
+            notes.write_text("00:10-01:00 Intro\n01:10-02:00 Deep dive\n", encoding="utf-8")
+
+            stdout = io.StringIO()
+            with patch("flowdl.cli.main.trim_media", side_effect=[str(source), str(source)]) as trim_mock:
+                with redirect_stdout(stdout):
+                    code = _handle_clip(str(source), str(notes))
+
+        self.assertEqual(code, 0)
+        self.assertEqual(trim_mock.call_count, 2)
+        self.assertIn("Created 2 clip(s).", stdout.getvalue())
+
     def test_main_routes_to_handlers(self) -> None:
         with patch("flowdl.cli.main._handle_download", return_value=11) as d_mock, patch(
             "flowdl.cli.main._handle_batch", return_value=12
         ) as b_mock, patch("flowdl.cli.main._handle_trim", return_value=13) as t_mock, patch(
             "flowdl.cli.main._handle_watch", return_value=14
-        ) as w_mock:
+        ) as w_mock, patch("flowdl.cli.main._handle_clip", return_value=15) as c_mock:
             self.assertEqual(main(["download", "https://example.com"]), 11)
             self.assertEqual(main(["batch", "/tmp/x.txt"]), 12)
             self.assertEqual(main(["trim", "a.mp4", "--start", "00:01", "--end", "00:02"]), 13)
             self.assertEqual(main(["watch", "https://example.com/channel"]), 14)
-
-        d_mock.assert_called_once_with("https://example.com", "video", False)
-        b_mock.assert_called_once()
+            self.assertEqual(main(["clip", "a.mp4", "--timestamps", "notes.txt"]), 15)
+        d_mock.assert_called_once_with("https://example.com", "video", False, False)
+        b_mock.assert_called_once_with("/tmp/x.txt", "video", False)
         t_mock.assert_called_once()
-        w_mock.assert_called_once_with("https://example.com/channel", "video", False, None)
+        w_mock.assert_called_once_with("https://example.com/channel", "video", False, None, False)
+        c_mock.assert_called_once_with("a.mp4", "notes.txt")
 
 
 if __name__ == "__main__":
