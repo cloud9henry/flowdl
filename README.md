@@ -85,7 +85,21 @@ Default presets are in `flowdl/config/presets.json`:
 - `podcast`: audio -> MP3 + compression, output to `Downloads/Podcasts`
 - `mobile`: video preset optimized for smaller files (720p + compression), output to `Downloads/Mobile`
 
-Create additional presets by editing `flowdl/config/presets.json`.
+User-level presets are supported at `~/.config/flowdl/presets.json`.
+When present, user presets are merged with defaults, and user keys override built-in preset names.
+
+Example:
+
+```json
+{
+  "lecture": {
+    "mode": "video",
+    "resolution": "720",
+    "compress": true,
+    "output_dir": "Downloads/Lectures"
+  }
+}
+```
 
 ## Development
 
@@ -109,9 +123,10 @@ tests/
 
 ## Roadmap
 
-- Channel/watch mode for automatic polling
+- User-level presets/config path (`~/.config/flowdl/presets.json`)
 - Rich naming templates and metadata embedding
-- More output presets (lecture, mobile, creator)
+- More output presets (lecture, creator)
+- Watch mode improvements (per-source intervals, retries, lockfile/single-instance safety)
 
 ## Contributing
 
