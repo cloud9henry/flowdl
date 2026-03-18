@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from flowdl.core.downloader import download_media
+from flowdl.core.downloader import download_media, get_playlist_urls
 
 
 class DownloaderTests(unittest.TestCase):
@@ -12,6 +12,16 @@ class DownloaderTests(unittest.TestCase):
 
         self.assertEqual(result, "/tmp/out.mp3")
         mock_dl.assert_called_once_with("https://example.com", preset)
+
+    def test_get_playlist_urls_delegates_to_wrapper(self) -> None:
+        with patch(
+            "flowdl.core.downloader.list_playlist_urls",
+            return_value=["https://example.com/a", "https://example.com/b"],
+        ) as mock_list:
+            result = get_playlist_urls("https://example.com/playlist")
+
+        self.assertEqual(result, ["https://example.com/a", "https://example.com/b"])
+        mock_list.assert_called_once_with("https://example.com/playlist")
 
 
 if __name__ == "__main__":

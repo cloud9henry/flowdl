@@ -31,6 +31,12 @@ class CLITests(unittest.TestCase):
         parsed = parser.parse_args(["download", "https://example.com"])
         self.assertEqual(parsed.command, "download")
         self.assertEqual(parsed.preset, "video")
+        self.assertFalse(parsed.playlist)
+
+    def test_build_parser_playlist_flag(self) -> None:
+        parser = build_parser()
+        parsed = parser.parse_args(["download", "https://example.com/list", "--playlist"])
+        self.assertTrue(parsed.playlist)
 
     def test_handle_download_success(self) -> None:
         stdout = io.StringIO()
@@ -51,6 +57,49 @@ class CLITests(unittest.TestCase):
 
         self.assertEqual(code, 1)
         self.assertIn("Error:", stderr.getvalue())
+
+    def test_handle_download_playlist_success(self) -> None:
+        stdout = io.StringIO()
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "audio"}), patch(
+            "flowdl.cli.main.get_playlist_urls",
+            return_value=["https://example.com/a", "https://example.com/b"],
+        ), patch("flowdl.cli.main.run_pipeline", return_value="/tmp/out.mp3"):
+            with redirect_stdout(stdout):
+                code = _handle_download("https://example.com/list", "music", playlist=True)
+
+        self.assertEqual(code, 0)
+        self.assertIn("Processed 2 playlist item(s).", stdout.getvalue())
+
+    def test_handle_download_playlist_partial_failure(self) -> None:
+        stdout = io.StringIO()
+        stderr = io.StringIO()
+
+        def side_effect(url: str, preset: dict) -> str:
+            if url.endswith("/b"):
+                raise RuntimeError("bad")
+            return "/tmp/out.mp3"
+
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "audio"}), patch(
+            "flowdl.cli.main.get_playlist_urls",
+            return_value=["https://example.com/a", "https://example.com/b"],
+        ), patch("flowdl.cli.main.run_pipeline", side_effect=side_effect):
+            with redirect_stdout(stdout), redirect_stderr(stderr):
+                code = _handle_download("https://example.com/list", "music", playlist=True)
+
+        self.assertEqual(code, 1)
+        self.assertIn("Completed with 1 failure(s).", stderr.getvalue())
+
+    def test_handle_download_playlist_empty(self) -> None:
+        stdout = io.StringIO()
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "audio"}), patch(
+            "flowdl.cli.main.get_playlist_urls",
+            return_value=[],
+        ):
+            with redirect_stdout(stdout):
+                code = _handle_download("https://example.com/list", "music", playlist=True)
+
+        self.assertEqual(code, 0)
+        self.assertIn("No items found in playlist.", stdout.getvalue())
 
     def test_handle_batch_missing_file(self) -> None:
         stderr = io.StringIO()
@@ -122,7 +171,7 @@ class CLITests(unittest.TestCase):
             self.assertEqual(main(["batch", "/tmp/x.txt"]), 12)
             self.assertEqual(main(["trim", "a.mp4", "--start", "00:01", "--end", "00:02"]), 13)
 
-        d_mock.assert_called_once()
+        d_mock.assert_called_once_with("https://example.com", "video", False)
         b_mock.assert_called_once()
         t_mock.assert_called_once()
 

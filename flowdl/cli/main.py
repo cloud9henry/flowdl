@@ -3,6 +3,7 @@ import re
 import sys
 from pathlib import Path
 
+from flowdl.core.downloader import get_playlist_urls
 from flowdl.core.pipeline import run_pipeline
 from flowdl.integrations.ffmpeg_wrapper import trim_media
 from flowdl.utils.config_loader import get_preset
@@ -19,11 +20,33 @@ def _validate_time(value: str) -> str:
     return value
 
 
-def _handle_download(url: str, preset_name: str) -> int:
+def _handle_download(url: str, preset_name: str, playlist: bool = False) -> int:
     try:
         preset = get_preset(preset_name)
-        final_path = run_pipeline(url, preset)
-        print(final_path)
+        if not playlist:
+            final_path = run_pipeline(url, preset)
+            print(final_path)
+            return 0
+
+        urls = get_playlist_urls(url)
+        if not urls:
+            print("No items found in playlist.")
+            return 0
+
+        failures = 0
+        for entry_url in urls:
+            try:
+                final_path = run_pipeline(entry_url, preset)
+                print(f"OK: {entry_url} -> {final_path}")
+            except (FlowDLError, RuntimeError) as exc:
+                failures += 1
+                print(f"FAIL: {entry_url} -> {exc}", file=sys.stderr)
+
+        if failures:
+            print(f"Completed with {failures} failure(s).", file=sys.stderr)
+            return 1
+
+        print(f"Processed {len(urls)} playlist item(s).")
         return 0
     except (FlowDLError, RuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -88,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
     download_parser = subparsers.add_parser("download", help="Download and process a single URL.")
     download_parser.add_argument("url", help="Media URL to download.")
     download_parser.add_argument("--preset", default="video", help="Preset name from presets.json.")
+    download_parser.add_argument(
+        "--playlist",
+        action="store_true",
+        help="Treat URL as playlist/channel feed and process each item with the selected preset.",
+    )
 
     batch_parser = subparsers.add_parser("batch", help="Process a list of URLs from a text file.")
     batch_parser.add_argument("file", help="Path to text file containing one URL per line.")
@@ -106,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "download":
-        return _handle_download(args.url, args.preset)
+        return _handle_download(args.url, args.preset, args.playlist)
 
     if args.command == "batch":
         return _handle_batch(args.file, args.preset)
@@ -120,4 +148,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

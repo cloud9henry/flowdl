@@ -44,3 +44,44 @@ def download_with_ytdlp(url: str, preset: dict, temp_dir: str = "temp") -> str:
     except DownloadError as exc:
         raise RuntimeError(f"Download failed for URL '{url}': {exc}") from exc
 
+
+def list_playlist_urls(url: str) -> list[str]:
+    if not _is_likely_url(url):
+        raise InvalidURLError(f"Invalid URL: {url}")
+
+    if YoutubeDL is None:
+        raise RuntimeError("yt-dlp is not installed. Install dependencies first.")
+
+    ydl_opts = {
+        "extract_flat": True,
+        "skip_download": True,
+        "quiet": True,
+        "no_warnings": True,
+    }
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+
+    if info.get("_type") != "playlist":
+        return [url]
+
+    output_urls: list[str] = []
+    for entry in info.get("entries", []):
+        if not entry:
+            continue
+
+        webpage_url = entry.get("webpage_url")
+        if webpage_url:
+            output_urls.append(webpage_url)
+            continue
+
+        candidate_url = entry.get("url")
+        if candidate_url and str(candidate_url).startswith(("http://", "https://")):
+            output_urls.append(str(candidate_url))
+            continue
+
+        video_id = entry.get("id") or candidate_url
+        if video_id:
+            output_urls.append(f"https://www.youtube.com/watch?v={video_id}")
+
+    return output_urls

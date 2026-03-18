@@ -70,6 +70,47 @@ class YtDlpWrapperTests(unittest.TestCase):
 
         self.assertIn("Download failed for URL", str(ctx.exception))
 
+    def test_list_playlist_urls_returns_single_url_for_non_playlist(self) -> None:
+        ydl_instance = MagicMock()
+        ydl_instance.extract_info.return_value = {"_type": "video"}
+        ydl_context = MagicMock()
+        ydl_context.__enter__.return_value = ydl_instance
+
+        with patch.object(yw, "YoutubeDL", return_value=ydl_context):
+            urls = yw.list_playlist_urls("https://example.com/video")
+
+        self.assertEqual(urls, ["https://example.com/video"])
+
+    def test_list_playlist_urls_extracts_entries(self) -> None:
+        ydl_instance = MagicMock()
+        ydl_instance.extract_info.return_value = {
+            "_type": "playlist",
+            "entries": [
+                {"webpage_url": "https://example.com/a"},
+                {"url": "https://example.com/b"},
+                {"id": "abc123"},
+                None,
+            ],
+        }
+        ydl_context = MagicMock()
+        ydl_context.__enter__.return_value = ydl_instance
+
+        with patch.object(yw, "YoutubeDL", return_value=ydl_context):
+            urls = yw.list_playlist_urls("https://example.com/playlist")
+
+        self.assertEqual(
+            urls,
+            [
+                "https://example.com/a",
+                "https://example.com/b",
+                "https://www.youtube.com/watch?v=abc123",
+            ],
+        )
+
+    def test_list_playlist_urls_invalid_url(self) -> None:
+        with self.assertRaises(InvalidURLError):
+            yw.list_playlist_urls("not-a-url")
+
 
 if __name__ == "__main__":
     unittest.main()
