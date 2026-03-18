@@ -24,6 +24,25 @@ It is designed to keep commands simple and repeatable by using presets instead o
 - `whisper.cpp` CLI (`whisper-cli`) installed and available on `PATH`
 - A local whisper.cpp model file (for example `ggml-base.en.bin`)
 
+### Install whisper.cpp and a model
+
+Option A (Homebrew + manual model download):
+
+```bash
+brew install whisper-cpp
+mkdir -p models
+curl -L -o models/ggml-base.en.bin \
+  https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin
+```
+
+Option B (from source + official model download script):
+
+```bash
+git clone https://github.com/ggml-org/whisper.cpp.git
+cd whisper.cpp
+./models/download-ggml-model.sh base.en
+```
+
 ## Installation
 
 ```bash
