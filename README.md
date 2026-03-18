@@ -1,20 +1,48 @@
 # FlowDL
 
-FlowDL is a preset-driven local CLI media pipeline built on top of `yt-dlp` and `ffmpeg`.
+FlowDL is a preset-driven CLI that wraps `yt-dlp` and `ffmpeg` into a clean local pipeline:
 
-## Features
+download -> post-process -> organise
 
-- Preset-first UX (no raw `yt-dlp` flags in CLI)
-- Pipeline flow: download -> post-process -> organise
-- Simple command surface for single URL, batch files, and trimming
-- Modular Python architecture designed for extension
+No raw downloader flags. No giant command strings. Just presets.
+
+## Why FlowDL
+
+- Preset-first UX for repeatable output
+- Single command for download + conversion + folder routing
+- Playlist-aware downloads with per-item processing
+- Minimal dependency surface and macOS-friendly workflow
+- Modular Python architecture that is easy to extend
+
+## Use Cases
+
+- Build a podcast library from long-form YouTube content
+- Build a cleaner music library from videos/live sets/remixes
+- Batch process research or study URLs into consistent outputs
+- Trim downloaded media into reusable clips
 
 ## Requirements
 
 - Python 3.10+
 - `ffmpeg` installed and available on `PATH`
+- `yt-dlp` is installed automatically via `pip install -e .`
 
 ## Installation
+
+### 1) Clone
+
+```bash
+git clone https://github.com/cloud9henry/flowdl.git
+cd flowdl
+```
+
+### 2) Install ffmpeg (macOS)
+
+```bash
+brew install ffmpeg
+```
+
+### 3) Create virtualenv and install FlowDL
 
 ```bash
 python3 -m venv .venv
@@ -31,9 +59,8 @@ flowdl batch urls.txt --preset podcast
 flowdl trim input.mp4 --start 00:10 --end 01:00
 ```
 
-## CLI Commands
+## Commands
 
-- `flowdl download <url> [--preset <name>]`
 - `flowdl download <url> [--preset <name>] [--playlist]`
 - `flowdl batch <file.txt> [--preset <name>]`
 - `flowdl trim <file> --start <time> --end <time>`
@@ -42,32 +69,42 @@ flowdl trim input.mp4 --start 00:10 --end 01:00
 
 Default presets are in `flowdl/config/presets.json`:
 
-- `music`: audio to MP3, high quality, `Downloads/Music`
-- `video`: video, target resolution config, `Downloads/Videos`
-- `podcast`: audio to MP3 with compression, `Downloads/Podcasts`
+- `music`: audio -> MP3, high quality, output to `Downloads/Music`
+- `video`: video mode, output to `Downloads/Videos`
+- `podcast`: audio -> MP3 + compression, output to `Downloads/Podcasts`
 
-## Testing
+Create additional presets by editing `flowdl/config/presets.json`.
+
+## Development
+
+Run tests:
 
 ```bash
 python3 -m unittest discover -s tests -v
 ```
 
-## Project Structure
+Project layout:
 
 ```text
 flowdl/
-  cli/
-  core/
-  integrations/
-  config/
-  utils/
+  cli/            # command parsing and handlers
+  core/           # pipeline orchestration
+  integrations/   # yt-dlp and ffmpeg wrappers
+  config/         # default presets
+  utils/          # shared helpers and errors
 tests/
 ```
 
-## Status
+## Roadmap
 
-MVP complete. Planned future capabilities (not yet implemented) include channel watch mode and richer naming/metadata workflows.
+- Channel/watch mode for automatic polling
+- Rich naming templates and metadata embedding
+- More output presets (lecture, mobile, creator)
+
+## Contributing
+
+Contributions are welcome. Please read `CONTRIBUTING.md` and open an issue for major changes.
 
 ## License
 
-This project is licensed under the MIT License. See `LICENSE`.
+MIT. See `LICENSE`.
