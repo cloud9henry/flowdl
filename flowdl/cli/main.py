@@ -1,10 +1,12 @@
 import argparse
 import re
 import sys
+import time
 from pathlib import Path
 
 from flowdl.core.downloader import get_playlist_urls
 from flowdl.core.pipeline import run_pipeline
+from flowdl.core.watcher import watch_once
 from flowdl.integrations.ffmpeg_wrapper import trim_media
 from flowdl.utils.config_loader import get_preset
 from flowdl.utils.errors import DependencyMissingError, FlowDLError, PresetNotFoundError
@@ -101,6 +103,48 @@ def _handle_trim(file_path: str, start: str, end: str) -> int:
         return 1
 
 
+def _handle_watch(url: str, preset_name: str, once: bool, interval: int | None) -> int:
+    try:
+        preset = get_preset(preset_name)
+    except PresetNotFoundError as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+    # Default mode is one-off watch execution.
+    is_once_mode = once or interval is None
+    if is_once_mode:
+        try:
+            result = watch_once(url, preset)
+            print(
+                f"Watch run complete: discovered={result['discovered']} new={result['new']} "
+                f"processed={result['processed']} failed={result['failed']}"
+            )
+            return 1 if result["failed"] else 0
+        except (FlowDLError, RuntimeError) as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 1
+
+    if interval is None or interval <= 0:
+        print("Error: --interval must be greater than 0.", file=sys.stderr)
+        return 1
+
+    print(f"Watching {url} every {interval} minute(s). Press Ctrl+C to stop.")
+    try:
+        while True:
+            result = watch_once(url, preset)
+            print(
+                f"Watch cycle: discovered={result['discovered']} new={result['new']} "
+                f"processed={result['processed']} failed={result['failed']}"
+            )
+            time.sleep(interval * 60)
+    except KeyboardInterrupt:
+        print("Watch stopped.")
+        return 0
+    except (FlowDLError, RuntimeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="flowdl",
@@ -126,6 +170,21 @@ def build_parser() -> argparse.ArgumentParser:
     trim_parser.add_argument("--start", required=True, type=_validate_time, help="Start time.")
     trim_parser.add_argument("--end", required=True, type=_validate_time, help="End time.")
 
+    watch_parser = subparsers.add_parser("watch", help="Watch a playlist/channel URL for new items.")
+    watch_parser.add_argument("url", help="Playlist or channel URL to monitor.")
+    watch_parser.add_argument("--preset", default="video", help="Preset name from presets.json.")
+    watch_mode_group = watch_parser.add_mutually_exclusive_group()
+    watch_mode_group.add_argument(
+        "--once",
+        action="store_true",
+        help="Run one watch cycle and exit (default behavior).",
+    )
+    watch_mode_group.add_argument(
+        "--interval",
+        type=int,
+        help="Run continuously, checking for new items every N minutes.",
+    )
+
     return parser
 
 
@@ -141,6 +200,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "trim":
         return _handle_trim(args.file, args.start, args.end)
+
+    if args.command == "watch":
+        return _handle_watch(args.url, args.preset, args.once, args.interval)
 
     parser.print_help()
     return 1

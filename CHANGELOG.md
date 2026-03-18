@@ -13,6 +13,7 @@ The format is inspired by Keep a Changelog and this project follows Semantic Ver
 - `flowdl download <url> [--preset <name>] [--playlist]`
 - `flowdl batch <file.txt> [--preset <name>]`
 - `flowdl trim <file> --start <time> --end <time>`
+- `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>]`
 - Preset system with `music`, `video`, `podcast`
 - Pipeline modules for download, post-process, and output organisation
 - `yt-dlp` and `ffmpeg` integration wrappers

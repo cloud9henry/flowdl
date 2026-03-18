@@ -57,6 +57,8 @@ flowdl download "https://www.youtube.com/watch?v=jNQXAC9IVRw" --preset music
 flowdl download "https://www.youtube.com/playlist?list=..." --preset podcast --playlist
 flowdl batch urls.txt --preset podcast
 flowdl trim input.mp4 --start 00:10 --end 01:00
+flowdl watch "https://www.youtube.com/playlist?list=..." --preset podcast --once
+flowdl watch "https://www.youtube.com/@channel/videos" --preset podcast --interval 30
 ```
 
 ## Commands
@@ -64,6 +66,7 @@ flowdl trim input.mp4 --start 00:10 --end 01:00
 - `flowdl download <url> [--preset <name>] [--playlist]`
 - `flowdl batch <file.txt> [--preset <name>]`
 - `flowdl trim <file> --start <time> --end <time>`
+- `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>]`
 
 ## Presets
 

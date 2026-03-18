@@ -9,6 +9,7 @@ from unittest.mock import patch
 from flowdl.cli.main import (
     _handle_batch,
     _handle_download,
+    _handle_watch,
     _handle_trim,
     _validate_time,
     build_parser,
@@ -37,6 +38,13 @@ class CLITests(unittest.TestCase):
         parser = build_parser()
         parsed = parser.parse_args(["download", "https://example.com/list", "--playlist"])
         self.assertTrue(parsed.playlist)
+
+    def test_build_parser_watch_once_default(self) -> None:
+        parser = build_parser()
+        parsed = parser.parse_args(["watch", "https://example.com/channel"])
+        self.assertEqual(parsed.command, "watch")
+        self.assertTrue(parsed.once is False)
+        self.assertIsNone(parsed.interval)
 
     def test_handle_download_success(self) -> None:
         stdout = io.StringIO()
@@ -163,17 +171,56 @@ class CLITests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("Warning:", stderr.getvalue())
 
+    def test_handle_watch_once_success(self) -> None:
+        stdout = io.StringIO()
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "video"}), patch(
+            "flowdl.cli.main.watch_once",
+            return_value={"discovered": 3, "new": 2, "processed": 2, "failed": 0},
+        ):
+            with redirect_stdout(stdout):
+                code = _handle_watch("https://example.com/channel", "video", once=True, interval=None)
+
+        self.assertEqual(code, 0)
+        self.assertIn("Watch run complete", stdout.getvalue())
+
+    def test_handle_watch_once_with_failures_returns_error(self) -> None:
+        stdout = io.StringIO()
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "video"}), patch(
+            "flowdl.cli.main.watch_once",
+            return_value={"discovered": 3, "new": 2, "processed": 1, "failed": 1},
+        ):
+            with redirect_stdout(stdout):
+                code = _handle_watch("https://example.com/channel", "video", once=True, interval=None)
+
+        self.assertEqual(code, 1)
+
+    def test_handle_watch_interval_mode_stops_on_keyboard_interrupt(self) -> None:
+        stdout = io.StringIO()
+        with patch("flowdl.cli.main.get_preset", return_value={"mode": "video"}), patch(
+            "flowdl.cli.main.watch_once",
+            return_value={"discovered": 1, "new": 0, "processed": 0, "failed": 0},
+        ), patch("flowdl.cli.main.time.sleep", side_effect=KeyboardInterrupt):
+            with redirect_stdout(stdout):
+                code = _handle_watch("https://example.com/channel", "video", once=False, interval=1)
+
+        self.assertEqual(code, 0)
+        self.assertIn("Watch stopped.", stdout.getvalue())
+
     def test_main_routes_to_handlers(self) -> None:
         with patch("flowdl.cli.main._handle_download", return_value=11) as d_mock, patch(
             "flowdl.cli.main._handle_batch", return_value=12
-        ) as b_mock, patch("flowdl.cli.main._handle_trim", return_value=13) as t_mock:
+        ) as b_mock, patch("flowdl.cli.main._handle_trim", return_value=13) as t_mock, patch(
+            "flowdl.cli.main._handle_watch", return_value=14
+        ) as w_mock:
             self.assertEqual(main(["download", "https://example.com"]), 11)
             self.assertEqual(main(["batch", "/tmp/x.txt"]), 12)
             self.assertEqual(main(["trim", "a.mp4", "--start", "00:01", "--end", "00:02"]), 13)
+            self.assertEqual(main(["watch", "https://example.com/channel"]), 14)
 
         d_mock.assert_called_once_with("https://example.com", "video", False)
         b_mock.assert_called_once()
         t_mock.assert_called_once()
+        w_mock.assert_called_once_with("https://example.com/channel", "video", False, None)
 
 
 if __name__ == "__main__":
