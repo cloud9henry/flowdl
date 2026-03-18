@@ -1,0 +1,20 @@
+{
+  "music": {
+    "mode": "audio",
+    "format": "mp3",
+    "quality": "high",
+    "output_dir": "Downloads/Music"
+  },
+  "video": {
+    "mode": "video",
+    "resolution": "1080",
+    "output_dir": "Downloads/Videos"
+  },
+  "podcast": {
+    "mode": "audio",
+    "format": "mp3",
+    "compress": true,
+    "output_dir": "Downloads/Podcasts"
+  }
+}
+
