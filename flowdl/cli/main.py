@@ -36,7 +36,12 @@ def _handle_download(
     try:
         preset = get_preset(preset_name)
         if not playlist:
-            final_path = run_pipeline(url, preset, audio_sidecar=audio_sidecar)
+            final_path = run_pipeline(
+                url,
+                preset,
+                audio_sidecar=audio_sidecar,
+                preset_name=preset_name,
+            )
             print(final_path)
             return 0
 
@@ -48,7 +53,12 @@ def _handle_download(
         failures = 0
         for entry_url in urls:
             try:
-                final_path = run_pipeline(entry_url, preset, audio_sidecar=audio_sidecar)
+                final_path = run_pipeline(
+                    entry_url,
+                    preset,
+                    audio_sidecar=audio_sidecar,
+                    preset_name=preset_name,
+                )
                 print(f"OK: {entry_url} -> {final_path}")
             except (FlowDLError, RuntimeError) as exc:
                 failures += 1
@@ -89,7 +99,12 @@ def _handle_batch(file_path: str, preset_name: str, audio_sidecar: bool = False)
     failures = 0
     for url in urls:
         try:
-            final_path = run_pipeline(url, preset, audio_sidecar=audio_sidecar)
+            final_path = run_pipeline(
+                url,
+                preset,
+                audio_sidecar=audio_sidecar,
+                preset_name=preset_name,
+            )
             print(f"OK: {url} -> {final_path}")
         except (FlowDLError, RuntimeError) as exc:
             failures += 1
@@ -194,7 +209,12 @@ def _handle_watch(
     is_once_mode = once or interval is None
     if is_once_mode:
         try:
-            result = watch_once(url, preset, audio_sidecar=audio_sidecar)
+            result = watch_once(
+                url,
+                preset,
+                audio_sidecar=audio_sidecar,
+                preset_name=preset_name,
+            )
             print(
                 f"Watch run complete: discovered={result['discovered']} new={result['new']} "
                 f"processed={result['processed']} failed={result['failed']}"
@@ -211,7 +231,12 @@ def _handle_watch(
     print(f"Watching {url} every {interval} minute(s). Press Ctrl+C to stop.")
     try:
         while True:
-            result = watch_once(url, preset, audio_sidecar=audio_sidecar)
+            result = watch_once(
+                url,
+                preset,
+                audio_sidecar=audio_sidecar,
+                preset_name=preset_name,
+            )
             print(
                 f"Watch cycle: discovered={result['discovered']} new={result['new']} "
                 f"processed={result['processed']} failed={result['failed']}"

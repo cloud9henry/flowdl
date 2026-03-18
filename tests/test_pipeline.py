@@ -1,13 +1,15 @@
 import unittest
 from unittest.mock import patch
 
+from flowdl.core.models import DownloadedMedia
 from flowdl.core.pipeline import run_pipeline
 
 
 class PipelineTests(unittest.TestCase):
     def test_run_pipeline_chains_stages(self) -> None:
         preset = {"mode": "audio", "output_dir": "/tmp"}
-        with patch("flowdl.core.pipeline.download_media", return_value="/tmp/source.webm") as d_mock, patch(
+        downloaded = DownloadedMedia(file_path="/tmp/source.webm", metadata={"title": "Sample"})
+        with patch("flowdl.core.pipeline.download_media", return_value=downloaded) as d_mock, patch(
             "flowdl.core.pipeline.postprocess", return_value="/tmp/source.mp3"
         ) as p_mock, patch("flowdl.core.pipeline.organise_output", return_value="/tmp/final/source.mp3") as o_mock:
             final_path = run_pipeline("https://example.com/video", preset)
@@ -15,7 +17,12 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(final_path, "/tmp/final/source.mp3")
         d_mock.assert_called_once_with("https://example.com/video", preset)
         p_mock.assert_called_once_with("/tmp/source.webm", preset)
-        o_mock.assert_called_once_with("/tmp/source.mp3", preset)
+        o_mock.assert_called_once_with(
+            "/tmp/source.mp3",
+            preset,
+            metadata={"title": "Sample"},
+            preset_name=None,
+        )
 
     def test_run_pipeline_propagates_stage_errors(self) -> None:
         preset = {"mode": "audio"}
@@ -25,7 +32,8 @@ class PipelineTests(unittest.TestCase):
 
     def test_run_pipeline_creates_audio_sidecar_for_video_mode(self) -> None:
         preset = {"mode": "video", "output_dir": "/tmp/videos", "audio_output_dir": "/tmp/audio"}
-        with patch("flowdl.core.pipeline.download_media", return_value="/tmp/source.webm"), patch(
+        downloaded = DownloadedMedia(file_path="/tmp/source.webm", metadata={"title": "Sample"})
+        with patch("flowdl.core.pipeline.download_media", return_value=downloaded), patch(
             "flowdl.core.pipeline.postprocess", return_value="/tmp/source.mp4"
         ), patch(
             "flowdl.core.pipeline.organise_output",
@@ -41,8 +49,14 @@ class PipelineTests(unittest.TestCase):
 
     def test_run_pipeline_audio_sidecar_uses_organised_path_after_move(self) -> None:
         preset = {"mode": "video", "output_dir": "/tmp/videos", "audio_output_dir": "/tmp/audio"}
+        downloaded = DownloadedMedia(file_path="/tmp/source.webm", metadata={"title": "Sample"})
 
-        def organise_side_effect(file_path: str, _preset: dict) -> str:
+        def organise_side_effect(
+            file_path: str,
+            _preset: dict,
+            metadata: dict | None = None,
+            preset_name: str | None = None,
+        ) -> str:
             if file_path == "/tmp/source.mp4":
                 return "/tmp/videos/source.mp4"
             if file_path == "/tmp/videos/source.mp3":
@@ -55,7 +69,7 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(output_format, "mp3")
             return "/tmp/videos/source.mp3"
 
-        with patch("flowdl.core.pipeline.download_media", return_value="/tmp/source.webm"), patch(
+        with patch("flowdl.core.pipeline.download_media", return_value=downloaded), patch(
             "flowdl.core.pipeline.postprocess", return_value="/tmp/source.mp4"
         ), patch(
             "flowdl.core.pipeline.organise_output",
@@ -70,7 +84,8 @@ class PipelineTests(unittest.TestCase):
 
     def test_run_pipeline_does_not_create_sidecar_for_audio_mode(self) -> None:
         preset = {"mode": "audio", "output_dir": "/tmp/audio"}
-        with patch("flowdl.core.pipeline.download_media", return_value="/tmp/source.webm"), patch(
+        downloaded = DownloadedMedia(file_path="/tmp/source.webm", metadata={"title": "Sample"})
+        with patch("flowdl.core.pipeline.download_media", return_value=downloaded), patch(
             "flowdl.core.pipeline.postprocess", return_value="/tmp/source.mp3"
         ), patch(
             "flowdl.core.pipeline.organise_output", return_value="/tmp/audio/source.mp3"

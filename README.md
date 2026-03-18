@@ -75,6 +75,9 @@ Built-in presets in `flowdl/config/presets.json`:
 - `mobile`: compressed 720p MP4-first video, output to `Downloads/Mobile`
 - `lecture`: compressed 720p video, output to `Downloads/Lectures`
 
+The default `lecture` preset also includes:
+- `filename_template`: `{uploader} - {title}.{ext}`
+
 ## User Presets
 
 User-level presets are supported at:
@@ -82,6 +85,41 @@ User-level presets are supported at:
 `~/.config/flowdl/presets.json`
 
 FlowDL loads defaults first, then merges user presets on top (user keys override defaults).
+
+### Filename Templates (Preset-level)
+
+Set `filename_template` in a preset to control final output naming.
+
+Supported keys:
+- `{title}`
+- `{uploader}`
+- `{channel}`
+- `{id}`
+- `{upload_date}`
+- `{preset}`
+- `{ext}`
+
+How it works:
+- FlowDL extracts metadata from `yt-dlp` during download.
+- The template is applied when moving processed output into the final preset folder.
+- If a key is missing, FlowDL uses empty text (or source filename stem for title fallback).
+- Illegal filename characters are sanitized automatically.
+- If a file already exists, FlowDL appends a numeric suffix: `name.ext`, `name (1).ext`, `name (2).ext`.
+
+Example user preset:
+
+```json
+{
+  "lecture": {
+    "filename_template": "{upload_date} - {uploader} - {title}.{ext}"
+  }
+}
+```
+
+Practical examples:
+- `{uploader} - {title}.{ext}` -> `MIT OCW - Lecture 01.mp4`
+- `{preset} - {title}.{ext}` -> `lecture - Linear Algebra Intro.mp4`
+- `{upload_date} - {title}.{ext}` -> `20240201 - Week 3 Recap.mp4`
 
 ## Watch Modes
 
@@ -102,7 +140,8 @@ python3 -m unittest discover -s tests -v
 
 ## Roadmap
 
-- Naming templates (for example `Uploader - Title`)
+- Desktop GUI for non-CLI workflows
+- Built-in transcription pipeline (`transcribe` command + timestamped artifacts)
 - Metadata embedding and loudness normalization presets
 - Download archive and retry/backoff policies
 - Watch mode hardening (lockfile/single-instance guarantees)

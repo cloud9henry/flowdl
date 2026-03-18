@@ -35,7 +35,8 @@ class YtDlpWrapperTests(unittest.TestCase):
             with patch.object(yw, "YoutubeDL", return_value=ydl_context) as ydl_ctor:
                 output = yw.download_with_ytdlp("https://example.com", {"mode": "audio"}, temp_dir=tmpdir)
 
-        self.assertEqual(output, "/tmp/out.webm")
+        self.assertEqual(output.file_path, "/tmp/out.webm")
+        self.assertEqual(output.metadata["id"], "1")
         ydl_ctor.assert_called_once()
         opts = ydl_ctor.call_args.args[0]
         self.assertEqual(opts["format"], "bestaudio/best")
@@ -54,7 +55,7 @@ class YtDlpWrapperTests(unittest.TestCase):
             with patch.object(yw, "YoutubeDL", return_value=ydl_context) as ydl_ctor:
                 output = yw.download_with_ytdlp("https://example.com", {"mode": "video"}, temp_dir=tmpdir)
 
-        self.assertEqual(output, "/tmp/out.mp4")
+        self.assertEqual(output.file_path, "/tmp/out.mp4")
         opts = ydl_ctor.call_args.args[0]
         self.assertEqual(opts["format"], "bestvideo+bestaudio/best")
         self.assertEqual(opts["merge_output_format"], "mp4")

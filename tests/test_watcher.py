@@ -43,6 +43,7 @@ class WatcherTests(unittest.TestCase):
                 "https://example.com/b",
                 {"mode": "video"},
                 audio_sidecar=False,
+                preset_name=None,
             )
 
     def test_watch_once_passes_audio_sidecar_flag(self) -> None:
@@ -64,6 +65,7 @@ class WatcherTests(unittest.TestCase):
                 "https://example.com/a",
                 {"mode": "video"},
                 audio_sidecar=True,
+                preset_name=None,
             )
 
     def test_watch_once_tracks_failures_without_marking_seen(self) -> None:

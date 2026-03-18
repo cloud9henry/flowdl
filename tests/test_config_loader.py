@@ -50,6 +50,10 @@ class ConfigLoaderTests(unittest.TestCase):
         preset = get_preset("music")
         self.assertEqual(preset["mode"], "audio")
 
+    def test_lecture_preset_has_filename_template(self) -> None:
+        preset = get_preset("lecture")
+        self.assertIn("filename_template", preset)
+
     def test_get_preset_raises_for_missing_name(self) -> None:
         with self.assertRaises(PresetNotFoundError) as ctx:
             get_preset("missing")

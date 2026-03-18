@@ -92,7 +92,12 @@ class CLITests(unittest.TestCase):
         stdout = io.StringIO()
         stderr = io.StringIO()
 
-        def side_effect(url: str, preset: dict, audio_sidecar: bool = False) -> str:
+        def side_effect(
+            url: str,
+            preset: dict,
+            audio_sidecar: bool = False,
+            preset_name: str | None = None,
+        ) -> str:
             if url.endswith("/b"):
                 raise RuntimeError("bad")
             return "/tmp/out.mp3"
@@ -146,7 +151,12 @@ class CLITests(unittest.TestCase):
             batch_file = Path(tmpdir) / "urls.txt"
             batch_file.write_text("https://example.com/a\nhttps://example.com/b\n", encoding="utf-8")
 
-            def run_side_effect(url: str, preset: dict, audio_sidecar: bool = False) -> str:
+            def run_side_effect(
+                url: str,
+                preset: dict,
+                audio_sidecar: bool = False,
+                preset_name: str | None = None,
+            ) -> str:
                 if url.endswith("b"):
                     raise FlowDLError("bad")
                 return "/tmp/out.mp4"
@@ -226,6 +236,7 @@ class CLITests(unittest.TestCase):
             "https://example.com",
             {"mode": "video"},
             audio_sidecar=True,
+            preset_name="video",
         )
 
     def test_handle_batch_passes_audio_sidecar_flag(self) -> None:
@@ -242,6 +253,7 @@ class CLITests(unittest.TestCase):
             "https://example.com/a",
             {"mode": "video"},
             audio_sidecar=True,
+            preset_name="video",
         )
 
     def test_handle_watch_passes_audio_sidecar_flag(self) -> None:
@@ -255,6 +267,7 @@ class CLITests(unittest.TestCase):
             "https://example.com/channel",
             {"mode": "video"},
             audio_sidecar=True,
+            preset_name="video",
         )
 
     def test_parse_timestamps_file(self) -> None:

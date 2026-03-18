@@ -1,6 +1,7 @@
 from pathlib import Path
 from urllib.parse import urlparse
 
+from flowdl.core.models import DownloadedMedia
 from flowdl.utils.errors import InvalidURLError
 
 try:
@@ -16,7 +17,7 @@ def _is_likely_url(url: str) -> bool:
     return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
 
 
-def download_with_ytdlp(url: str, preset: dict, temp_dir: str = "temp") -> str:
+def download_with_ytdlp(url: str, preset: dict, temp_dir: str = "temp") -> DownloadedMedia:
     if not _is_likely_url(url):
         raise InvalidURLError(f"Invalid URL: {url}")
 
@@ -49,7 +50,14 @@ def download_with_ytdlp(url: str, preset: dict, temp_dir: str = "temp") -> str:
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             output_path = ydl.prepare_filename(info)
-            return str(Path(output_path))
+            metadata = {
+                "title": str(info.get("title") or ""),
+                "uploader": str(info.get("uploader") or ""),
+                "channel": str(info.get("channel") or ""),
+                "id": str(info.get("id") or ""),
+                "upload_date": str(info.get("upload_date") or ""),
+            }
+            return DownloadedMedia(file_path=str(Path(output_path)), metadata=metadata)
     except DownloadError as exc:
         raise RuntimeError(f"Download failed for URL '{url}': {exc}") from exc
 

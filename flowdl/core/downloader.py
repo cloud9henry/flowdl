@@ -1,7 +1,8 @@
+from flowdl.core.models import DownloadedMedia
 from flowdl.integrations.ytdlp_wrapper import download_with_ytdlp, list_playlist_urls
 
 
-def download_media(url: str, preset: dict) -> str:
+def download_media(url: str, preset: dict) -> DownloadedMedia:
     return download_with_ytdlp(url, preset)
 
 

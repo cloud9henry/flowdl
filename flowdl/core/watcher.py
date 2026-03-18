@@ -32,6 +32,7 @@ def watch_once(
     preset: dict,
     state_path: str | Path | None = None,
     audio_sidecar: bool = False,
+    preset_name: str | None = None,
 ) -> dict:
     state = load_watch_state(state_path)
     sources = state.setdefault("sources", {})
@@ -45,7 +46,7 @@ def watch_once(
     failed = 0
     for url in new_urls:
         try:
-            run_pipeline(url, preset, audio_sidecar=audio_sidecar)
+            run_pipeline(url, preset, audio_sidecar=audio_sidecar, preset_name=preset_name)
             seen_urls.add(url)
             processed += 1
         except Exception:
@@ -68,10 +69,17 @@ def watch_interval(
     interval_minutes: int,
     state_path: str | Path | None = None,
     audio_sidecar: bool = False,
+    preset_name: str | None = None,
 ) -> None:
     if interval_minutes <= 0:
         raise ValueError("interval_minutes must be greater than 0")
 
     while True:
-        watch_once(source_url, preset, state_path=state_path, audio_sidecar=audio_sidecar)
+        watch_once(
+            source_url,
+            preset,
+            state_path=state_path,
+            audio_sidecar=audio_sidecar,
+            preset_name=preset_name,
+        )
         time.sleep(interval_minutes * 60)

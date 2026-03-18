@@ -28,6 +28,7 @@
     "compress": true,
     "audio_format": "mp3",
     "audio_output_dir": "Downloads/Lectures/Audio",
+    "filename_template": "{uploader} - {title}.{ext}",
     "output_dir": "Downloads/Lectures"
   }
 }
