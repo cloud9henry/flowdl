@@ -21,12 +21,13 @@ It is designed to keep commands simple and repeatable by using presets instead o
 - Python 3.10+
 - `ffmpeg` installed and available on `PATH`
 - `yt-dlp` (installed automatically by `pip install -e .`)
-- `whisper.cpp` CLI (`whisper-cli`) installed and available on `PATH`
-- A local whisper.cpp model file (for example `ggml-base.en.bin`)
+- `whisper.cpp` CLI (`whisper-cli`) and a local model file are only required for the `transcribe` command.
 
 ### Install whisper.cpp and a model
 
-Option A (Homebrew + manual model download):
+This section is optional and only needed if you plan to use `flowdl transcribe`.
+
+Option A (macOS/Homebrew + manual model download):
 
 ```bash
 brew install whisper-cpp
@@ -43,16 +44,23 @@ cd whisper.cpp
 ./models/download-ggml-model.sh base.en
 ```
 
+Linux package managers and Windows package managers may also provide `whisper.cpp`; ensure `whisper-cli` is on `PATH`.
+
 ## Installation
 
 ```bash
 git clone https://github.com/cloud9henry/flowdl.git
 cd flowdl
-brew install ffmpeg            # macOS
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
+
+Install `ffmpeg` before using FlowDL:
+
+- macOS: `brew install ffmpeg`
+- Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y ffmpeg`
+- Windows: install FFmpeg and add it to `PATH`
 
 ## Smoke Test (2 Minutes)
 
