@@ -13,7 +13,7 @@ def run_pipeline(url: str, preset: dict, audio_sidecar: bool = False) -> str:
 
     if audio_sidecar and preset.get("mode") == "video":
         audio_format = preset.get("audio_format", "mp3")
-        audio_file = convert_audio(processed_file, output_format=audio_format)
+        audio_file = convert_audio(final_path, output_format=audio_format)
         audio_output_dir = preset.get(
             "audio_output_dir",
             str(Path(preset["output_dir"]) / "Audio"),

@@ -36,8 +36,37 @@ class PipelineTests(unittest.TestCase):
             final_path = run_pipeline("https://example.com/video", preset, audio_sidecar=True)
 
         self.assertEqual(final_path, "/tmp/videos/source.mp4")
-        audio_mock.assert_called_once_with("/tmp/source.mp4", output_format="mp3")
+        audio_mock.assert_called_once_with("/tmp/videos/source.mp4", output_format="mp3")
         self.assertEqual(organise_mock.call_count, 2)
+
+    def test_run_pipeline_audio_sidecar_uses_organised_path_after_move(self) -> None:
+        preset = {"mode": "video", "output_dir": "/tmp/videos", "audio_output_dir": "/tmp/audio"}
+
+        def organise_side_effect(file_path: str, _preset: dict) -> str:
+            if file_path == "/tmp/source.mp4":
+                return "/tmp/videos/source.mp4"
+            if file_path == "/tmp/videos/source.mp3":
+                return "/tmp/audio/source.mp3"
+            raise AssertionError(f"Unexpected organise_output input: {file_path}")
+
+        def convert_side_effect(file_path: str, output_format: str = "mp3") -> str:
+            if file_path != "/tmp/videos/source.mp4":
+                raise AssertionError("convert_audio must use organised video path")
+            self.assertEqual(output_format, "mp3")
+            return "/tmp/videos/source.mp3"
+
+        with patch("flowdl.core.pipeline.download_media", return_value="/tmp/source.webm"), patch(
+            "flowdl.core.pipeline.postprocess", return_value="/tmp/source.mp4"
+        ), patch(
+            "flowdl.core.pipeline.organise_output",
+            side_effect=organise_side_effect,
+        ), patch(
+            "flowdl.core.pipeline.convert_audio",
+            side_effect=convert_side_effect,
+        ):
+            final_path = run_pipeline("https://example.com/video", preset, audio_sidecar=True)
+
+        self.assertEqual(final_path, "/tmp/videos/source.mp4")
 
     def test_run_pipeline_does_not_create_sidecar_for_audio_mode(self) -> None:
         preset = {"mode": "audio", "output_dir": "/tmp/audio"}
