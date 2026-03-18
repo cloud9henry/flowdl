@@ -92,3 +92,25 @@ def trim_media(input_file: str, start: str, end: str, output_file: str | None = 
     _run_ffmpeg(command)
     return str(output_path)
 
+
+def extract_audio_for_transcription(input_file: str, output_file: str | None = None) -> str:
+    source = Path(input_file)
+    if output_file is None:
+        output_path = source.with_suffix(".transcribe.wav")
+    else:
+        output_path = Path(output_file)
+
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i",
+        str(source),
+        "-vn",
+        "-ac",
+        "1",
+        "-ar",
+        "16000",
+        str(output_path),
+    ]
+    _run_ffmpeg(command)
+    return str(output_path)

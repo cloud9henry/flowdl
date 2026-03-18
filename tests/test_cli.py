@@ -10,6 +10,7 @@ from flowdl.cli.main import (
     _handle_batch,
     _handle_clip,
     _handle_download,
+    _handle_transcribe,
     _handle_watch,
     _handle_trim,
     _parse_timestamps_file,
@@ -55,6 +56,15 @@ class CLITests(unittest.TestCase):
         parsed = parser.parse_args(["clip", "input.mp4", "--timestamps", "notes.txt"])
         self.assertEqual(parsed.command, "clip")
         self.assertEqual(parsed.timestamps, "notes.txt")
+
+    def test_build_parser_transcribe_command(self) -> None:
+        parser = build_parser()
+        parsed = parser.parse_args(
+            ["transcribe", "input.mp4", "--model", "/models/base.bin", "--output-dir", "Transcripts"]
+        )
+        self.assertEqual(parsed.command, "transcribe")
+        self.assertEqual(parsed.source, "input.mp4")
+        self.assertEqual(parsed.model, "/models/base.bin")
 
     def test_handle_download_success(self) -> None:
         stdout = io.StringIO()
@@ -270,6 +280,18 @@ class CLITests(unittest.TestCase):
             preset_name="video",
         )
 
+    def test_handle_transcribe_success(self) -> None:
+        stdout = io.StringIO()
+        with patch(
+            "flowdl.cli.main.run_transcription",
+            return_value=("/tmp/out.txt", "/tmp/out.json"),
+        ):
+            with redirect_stdout(stdout):
+                code = _handle_transcribe("input.mp4", "/models/base.bin", "Transcripts", "en")
+
+        self.assertEqual(code, 0)
+        self.assertIn("Transcript (txt):", stdout.getvalue())
+
     def test_parse_timestamps_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             notes = Path(tmpdir) / "notes.txt"
@@ -305,17 +327,24 @@ class CLITests(unittest.TestCase):
             "flowdl.cli.main._handle_batch", return_value=12
         ) as b_mock, patch("flowdl.cli.main._handle_trim", return_value=13) as t_mock, patch(
             "flowdl.cli.main._handle_watch", return_value=14
-        ) as w_mock, patch("flowdl.cli.main._handle_clip", return_value=15) as c_mock:
+        ) as w_mock, patch("flowdl.cli.main._handle_clip", return_value=15) as c_mock, patch(
+            "flowdl.cli.main._handle_transcribe", return_value=16
+        ) as tr_mock:
             self.assertEqual(main(["download", "https://example.com"]), 11)
             self.assertEqual(main(["batch", "/tmp/x.txt"]), 12)
             self.assertEqual(main(["trim", "a.mp4", "--start", "00:01", "--end", "00:02"]), 13)
             self.assertEqual(main(["watch", "https://example.com/channel"]), 14)
             self.assertEqual(main(["clip", "a.mp4", "--timestamps", "notes.txt"]), 15)
+            self.assertEqual(
+                main(["transcribe", "a.mp4", "--model", "/models/base.bin"]),
+                16,
+            )
         d_mock.assert_called_once_with("https://example.com", "video", False, False)
         b_mock.assert_called_once_with("/tmp/x.txt", "video", False)
         t_mock.assert_called_once()
         w_mock.assert_called_once_with("https://example.com/channel", "video", False, None, False)
         c_mock.assert_called_once_with("a.mp4", "notes.txt")
+        tr_mock.assert_called_once_with("a.mp4", "/models/base.bin", "Transcripts", None)
 
 
 if __name__ == "__main__":

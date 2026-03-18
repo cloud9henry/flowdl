@@ -6,6 +6,7 @@ from pathlib import Path
 
 from flowdl.core.downloader import get_playlist_urls
 from flowdl.core.pipeline import run_pipeline
+from flowdl.core.transcriber import run_transcription
 from flowdl.core.watcher import watch_once
 from flowdl.integrations.ffmpeg_wrapper import trim_media
 from flowdl.utils.config_loader import get_preset
@@ -250,6 +251,22 @@ def _handle_watch(
         return 1
 
 
+def _handle_transcribe(source: str, model_path: str, output_dir: str, language: str | None) -> int:
+    try:
+        txt_path, json_path = run_transcription(
+            source=source,
+            model_path=model_path,
+            output_dir=output_dir,
+            language=language,
+        )
+        print(f"Transcript (txt): {txt_path}")
+        print(f"Transcript (json): {json_path}")
+        return 0
+    except (DependencyMissingError, RuntimeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="flowdl",
@@ -313,6 +330,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="For video presets, also export an audio-only sidecar file.",
     )
 
+    transcribe_parser = subparsers.add_parser(
+        "transcribe",
+        help="Transcribe media using whisper.cpp.",
+    )
+    transcribe_parser.add_argument("source", help="Media file path or URL.")
+    transcribe_parser.add_argument(
+        "--model",
+        required=True,
+        help="Path to whisper.cpp model file (for example ggml-base.en.bin).",
+    )
+    transcribe_parser.add_argument(
+        "--output-dir",
+        default="Transcripts",
+        help="Directory to write transcript output files.",
+    )
+    transcribe_parser.add_argument(
+        "--language",
+        default=None,
+        help="Optional language code for whisper.cpp (for example en).",
+    )
+
     return parser
 
 
@@ -334,6 +372,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "watch":
         return _handle_watch(args.url, args.preset, args.once, args.interval, args.audio_sidecar)
+
+    if args.command == "transcribe":
+        return _handle_transcribe(args.source, args.model, args.output_dir, args.language)
 
     parser.print_help()
     return 1

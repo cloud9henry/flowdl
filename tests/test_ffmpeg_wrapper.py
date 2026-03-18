@@ -7,6 +7,7 @@ from flowdl.integrations.ffmpeg_wrapper import (
     compress_audio,
     compress_video,
     convert_audio,
+    extract_audio_for_transcription,
     trim_media,
 )
 from flowdl.utils.errors import DependencyMissingError
@@ -107,6 +108,15 @@ class FFmpegWrapperTests(unittest.TestCase):
         self.assertEqual(output, "/tmp/out.mp4")
         run_mock.assert_called_once_with(
             ["ffmpeg", "-y", "-ss", "00:01", "-to", "00:10", "-i", "/tmp/in.mp4", "-c", "copy", "/tmp/out.mp4"]
+        )
+
+    def test_extract_audio_for_transcription_builds_expected_command(self) -> None:
+        with patch("flowdl.integrations.ffmpeg_wrapper._run_ffmpeg") as run_mock:
+            output = extract_audio_for_transcription("/tmp/in.mp4", output_file="/tmp/out.wav")
+
+        self.assertEqual(output, "/tmp/out.wav")
+        run_mock.assert_called_once_with(
+            ["ffmpeg", "-y", "-i", "/tmp/in.mp4", "-vn", "-ac", "1", "-ar", "16000", "/tmp/out.wav"]
         )
 
 

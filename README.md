@@ -21,6 +21,8 @@ It is designed to keep commands simple and repeatable by using presets instead o
 - Python 3.10+
 - `ffmpeg` installed and available on `PATH`
 - `yt-dlp` (installed automatically by `pip install -e .`)
+- `whisper.cpp` CLI (`whisper-cli`) installed and available on `PATH`
+- A local whisper.cpp model file (for example `ggml-base.en.bin`)
 
 ## Installation
 
@@ -33,6 +35,19 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+## Smoke Test (2 Minutes)
+
+After install, run one end-to-end command:
+
+```bash
+flowdl download "https://www.youtube.com/watch?v=jNQXAC9IVRw" --preset music
+```
+
+Success criteria:
+- command exits with code `0`
+- output file exists under `Downloads/Music/`
+- output extension is `.mp3`
+
 ## Best Example: Lecture Workflow
 
 Download a YouTube lecture video, compress it for portability, and also export audio:
@@ -44,6 +59,16 @@ flowdl download "https://www.youtube.com/watch?v=..." --preset lecture --audio-s
 Default lecture outputs:
 - video: `Downloads/Lectures`
 - audio sidecar: `Downloads/Lectures/Audio`
+
+Transcribe the lecture audio with whisper.cpp:
+
+```bash
+flowdl transcribe "Downloads/Lectures/Audio/<lecture-audio>.mp3" --model /path/to/ggml-base.en.bin --language en
+```
+
+Transcript outputs:
+- text: `Transcripts/<lecture-audio>.txt`
+- structured JSON: `Transcripts/<lecture-audio>.json`
 
 Then generate clips from notes:
 
@@ -65,8 +90,27 @@ Example `notes.txt`:
 - `flowdl trim <file> --start <time> --end <time>`
 - `flowdl clip <file> --timestamps <notes.txt>`
 - `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>] [--audio-sidecar]`
+- `flowdl transcribe <source> --model <model.bin> [--output-dir <dir>] [--language <code>]`
 
 FlowDL is optimized for YouTube media workflows (single videos, playlists, and channels).
+
+## Transcribe (whisper.cpp)
+
+Transcribe a local media file:
+
+```bash
+flowdl transcribe lecture.mp4 --model /path/to/ggml-base.en.bin --language en
+```
+
+Transcribe directly from a URL:
+
+```bash
+flowdl transcribe "https://www.youtube.com/watch?v=..." --model /path/to/ggml-base.en.bin
+```
+
+Outputs:
+- `Transcripts/<name>.txt`
+- `Transcripts/<name>.json`
 
 ## Presets
 
@@ -144,7 +188,6 @@ python3 -m unittest discover -s tests -v
 ## Roadmap
 
 - Desktop GUI for non-CLI workflows
-- Built-in transcription pipeline (`transcribe` command + timestamped artifacts)
 - Metadata embedding and loudness normalization presets
 - Download archive and retry/backoff policies
 - Watch mode hardening (lockfile/single-instance guarantees)

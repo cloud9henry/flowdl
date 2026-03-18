@@ -17,6 +17,7 @@ The format is inspired by Keep a Changelog and this project follows Semantic Ver
 - `flowdl clip <file> --timestamps <notes.txt>`
 - `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>]`
 - `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>] [--audio-sidecar]`
+- `flowdl transcribe <source> --model <model.bin> [--output-dir <dir>] [--language <code>]`
 - Preset system with `music`, `video`, `podcast`, `mobile`, `lecture`
 - Video downloads now prefer MP4 output via yt-dlp remux settings
 - Preset-level filename templates for output naming (`filename_template`)
