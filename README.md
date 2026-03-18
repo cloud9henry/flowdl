@@ -61,6 +61,14 @@ flowdl watch "https://www.youtube.com/playlist?list=..." --preset podcast --once
 flowdl watch "https://www.youtube.com/@channel/videos" --preset podcast --interval 30
 ```
 
+## When To Use `watch`
+
+Use `watch` for ongoing intake from a playlist/channel URL.
+
+- Use `--once` when running on a schedule (recommended for most users).
+- Use `--interval <minutes>` when you want a continuous foreground watcher.
+- Watch state is persisted in `~/.flowdl/watch_state.json`, so already-seen items are skipped on later runs.
+
 ## Commands
 
 - `flowdl download <url> [--preset <name>] [--playlist]`
