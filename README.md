@@ -1,6 +1,6 @@
 # FlowDL
 
-FlowDL is a preset-driven CLI media pipeline built on top of `yt-dlp` and `ffmpeg`.
+FlowDL is a preset-driven **YouTube downloader CLI** and media pipeline built on top of `yt-dlp` and `ffmpeg`.
 
 download -> post-process -> organise
 
@@ -10,6 +10,7 @@ It is designed to keep commands simple and repeatable by using presets instead o
 
 - Preset-first UX for consistent output
 - MP4-first video downloads for better compatibility
+- Built for YouTube URLs, playlists, and channel feeds
 - Playlist-aware downloads (`--playlist`)
 - Lecture workflow support with optional audio sidecar export
 - Clip extraction from timestamp files
@@ -34,7 +35,7 @@ pip install -e .
 
 ## Best Example: Lecture Workflow
 
-Download lecture video, compress it for portability, and also export audio:
+Download a YouTube lecture video, compress it for portability, and also export audio:
 
 ```bash
 flowdl download "https://www.youtube.com/watch?v=..." --preset lecture --audio-sidecar
@@ -64,6 +65,8 @@ Example `notes.txt`:
 - `flowdl trim <file> --start <time> --end <time>`
 - `flowdl clip <file> --timestamps <notes.txt>`
 - `flowdl watch <url> [--preset <name>] [--once | --interval <minutes>] [--audio-sidecar]`
+
+FlowDL is optimized for YouTube media workflows (single videos, playlists, and channels).
 
 ## Presets
 
