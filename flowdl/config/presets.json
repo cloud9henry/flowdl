@@ -15,6 +15,11 @@
     "format": "mp3",
     "compress": true,
     "output_dir": "Downloads/Podcasts"
+  },
+  "mobile": {
+    "mode": "video",
+    "resolution": "720",
+    "compress": true,
+    "output_dir": "Downloads/Mobile"
   }
 }
-

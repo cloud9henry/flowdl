@@ -16,6 +16,7 @@ class ConfigLoaderTests(unittest.TestCase):
         self.assertIn("music", presets)
         self.assertIn("video", presets)
         self.assertIn("podcast", presets)
+        self.assertIn("mobile", presets)
 
     def test_get_preset_returns_selected_preset(self) -> None:
         preset = get_preset("music")

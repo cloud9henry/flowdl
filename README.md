@@ -83,6 +83,7 @@ Default presets are in `flowdl/config/presets.json`:
 - `music`: audio -> MP3, high quality, output to `Downloads/Music`
 - `video`: video mode, output to `Downloads/Videos`
 - `podcast`: audio -> MP3 + compression, output to `Downloads/Podcasts`
+- `mobile`: video preset optimized for smaller files (720p + compression), output to `Downloads/Mobile`
 
 Create additional presets by editing `flowdl/config/presets.json`.
 
