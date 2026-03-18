@@ -23,9 +23,25 @@ It is designed to keep commands simple and repeatable by using presets instead o
 - `yt-dlp` (installed automatically by `pip install -e .`)
 - `whisper.cpp` CLI (`whisper-cli`) and a local model file are only required for the `transcribe` command.
 
-### Install whisper.cpp and a model
+## Installation
 
-This section is optional and only needed if you plan to use `flowdl transcribe`.
+```bash
+git clone https://github.com/cloud9henry/flowdl.git
+cd flowdl
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+Install `ffmpeg` before using FlowDL:
+
+- macOS: `brew install ffmpeg`
+- Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y ffmpeg`
+- Windows: install FFmpeg and add it to `PATH`
+
+### Install whisper.cpp and a model (optional, for `transcribe`)
+
+This section is only needed if you plan to use `flowdl transcribe`.
 
 Option A (macOS/Homebrew + manual model download):
 
@@ -45,22 +61,6 @@ cd whisper.cpp
 ```
 
 Linux package managers and Windows package managers may also provide `whisper.cpp`; ensure `whisper-cli` is on `PATH`.
-
-## Installation
-
-```bash
-git clone https://github.com/cloud9henry/flowdl.git
-cd flowdl
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-Install `ffmpeg` before using FlowDL:
-
-- macOS: `brew install ffmpeg`
-- Ubuntu/Debian: `sudo apt-get update && sudo apt-get install -y ffmpeg`
-- Windows: install FFmpeg and add it to `PATH`
 
 ## Smoke Test (2 Minutes)
 
@@ -92,6 +92,8 @@ Transcribe the lecture audio with whisper.cpp:
 ```bash
 flowdl transcribe "Downloads/Lectures/Audio/<lecture-audio>.mp3" --model /path/to/ggml-base.en.bin --language en
 ```
+
+Replace `/path/to/ggml-base.en.bin` with your actual model location, for example `models/ggml-base.en.bin`.
 
 Transcript outputs:
 - text: `Transcripts/<lecture-audio>.txt`
@@ -134,6 +136,8 @@ Transcribe directly from a URL:
 ```bash
 flowdl transcribe "https://www.youtube.com/watch?v=..." --model /path/to/ggml-base.en.bin
 ```
+
+Replace `/path/to/ggml-base.en.bin` with your actual model location, for example `models/ggml-base.en.bin`.
 
 Outputs:
 - `Transcripts/<name>.txt`
